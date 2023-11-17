@@ -40,6 +40,7 @@ fun moveMinotaur(minotaurCoord: Int, theseusCoord: Int): Int {
     }
 }
 
+// Returns the next minotaur position, given a theseus position and the minotaur's current position
 fun getNextMinotaurPosition(minotaurPos: Position, theseusPos: Position, maze: Array<IntArray>): Position {
     var currMinotaurX = minotaurPos.x;
     var currMinotaurY = minotaurPos.y;
@@ -96,11 +97,11 @@ fun aStar(maze: Array<IntArray>, start: State, goal: Position): List<State>? {
         // If we find the goal, reconstruct the path and return
         if (current.theseusPos == goal) {
             val path = mutableListOf<State>()
-            var cur: State? = current
+            var curr: State? = current
             // Reconstruct the path using the parent node from each node, reversed to get the original path
-            while (cur != null) {
-                path.add(cur)
-                cur = cameFrom[cur]
+            while (curr != null) {
+                path.add(curr)
+                curr = cameFrom[curr]
             }
             path.reverse()
             return path
@@ -128,7 +129,7 @@ fun aStar(maze: Array<IntArray>, start: State, goal: Position): List<State>? {
 }
 
 fun main() {
-    val maze = arrayOf(
+    val maze1 = arrayOf(
         intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
         intArrayOf(0, 1, 0, 1, 0, 1, 1, 1),
         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
@@ -138,11 +139,23 @@ fun main() {
         intArrayOf(0, 0, 1, 0, 0, 1, 0, 0)
     )
 
-    val start = State(Position(1, 2), Position(5, 2))
-    val goal = Position(7, 0)
+    val maze2 = arrayOf(
+        intArrayOf(0, 0, 0, 0, 0, 1),
+        intArrayOf(0, 1, 1, 1, 0, 1),
+        intArrayOf(0, 0, 0, 1, 0, 0),
+        intArrayOf(0, 1, 1, 1, 0, 1),
+        intArrayOf(0, 0, 0, 0, 0, 1),
+    )
 
-    val path = aStar(maze, start, goal)
-    println(path)
+
+    // val start = State(Position(1, 2), Position(5, 2))
+    // val goal = Position(7, 0)
+
+    val start = State(Position(2, 0), Position(2, 4))
+    val goal = Position(5, 2)
+
+    val path = aStar(maze2, start, goal)
+    path?.forEach {println("${it.theseusPos}, ${it.minotaurPos}")}
 }
 
 main()
