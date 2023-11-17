@@ -1,29 +1,28 @@
 import java.util.*
 
-// i is the row index, j is the column index
-data class Node(val i: Int, val j: Int)
+data class Node(val x: Int, val y: Int)
 
 // Manhattan distance heuristic
 fun heuristic(point: Node, goal: Node): Int {
-    return Math.abs(point.i - goal.i) + Math.abs(point.j - goal.j)
+    return Math.abs(point.x - goal.x) + Math.abs(point.y - goal.y)
 }
 
 // Checks if a given position is valid: if it is within the maze, and it is an empty space
-fun isPositionValid(i: Int, j: Int, grid: Array<IntArray>): Boolean {
-    return i in 0 until grid.size && j in 0 until grid[0].size && grid[i][j] == 0;
+fun isPositionValid(x: Int, y: Int, maze: Array<IntArray>): Boolean {
+    return y in 0 until maze.size && x in 0 until maze[0].size && maze[y][x] == 0;
 }
 
-// Returns the next possible neighbors given the current node and a grid
-fun getNextStates(current: Node, grid: Array<IntArray>): List<Node> {
+// Returns the next possible neighbors given the current node and a maze
+fun getNextTheseusPositions(current: Node, maze: Array<IntArray>): List<Node> {
     val moves = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
     val states = mutableListOf<Node>();
 
     for ((dx, dy) in moves) {
-        val i = current.i + dx
-        val j = current.j + dy
-        val neighbor = Node(i, j)
+        val x = current.x + dx
+        val y = current.y + dy
+        val neighbor = Node(x, y)
 
-        if (isPositionValid(i, j, grid)) { 
+        if (isPositionValid(x, y, maze)) { 
             states.add(neighbor)
         }
     }
@@ -31,7 +30,22 @@ fun getNextStates(current: Node, grid: Array<IntArray>): List<Node> {
     return states
 }
 
-fun astar(grid: Array<IntArray>, start: Node, goal: Node): List<Node>? {
+// Return change in i or j based on given horizontal/vertical coordinates
+fun moveMinotaur(minotaurCoord: Int, theseusCoord: Int): Int {
+    return when {
+        minotaurCoord < theseusCoord -> 1
+        minotaurCoord > theseusCoord -> -1
+        else -> 0
+    }
+}
+
+// fun getNextMinotaurPosition(minotaurPos: Node, theseusPos: Node) {
+//     repeat(2) {
+//         val dx = moveMinotaur(minotaurPos.j, theseusPos.j)
+//     }
+// }
+
+fun astar(maze: Array<IntArray>, start: Node, goal: Node): List<Node>? {
     // Stores nodes based on priority (cost), based on how close they are to the goal
     // and how many steps they are from the starting point
     val openSet = PriorityQueue(compareBy<Pair<Int, Node>> { it.first })
@@ -46,8 +60,8 @@ fun astar(grid: Array<IntArray>, start: Node, goal: Node): List<Node>? {
         // Gets pair at front of queue, where current is the current Node
         val (_, current) = openSet.poll()
 
+        // If we find the goal, reconstruct the path and return
         if (current == goal) {
-            // Reconstruct the path and return
             val path = mutableListOf<Node>()
             var cur: Node? = current
             // Reconstruct the path using the parent node from each node, reversed to get the original path
@@ -59,7 +73,7 @@ fun astar(grid: Array<IntArray>, start: Node, goal: Node): List<Node>? {
             return path
         }
 
-        for (neighbor in getNextStates(current, grid)) {
+        for (neighbor in getNextTheseusPositions(current, maze)) {
         // The gScore of moving from the current node to its neighbour is just the score
         // of the current node + 1, since moving from one tile to another has a uniform cost
         // of 1
@@ -79,7 +93,7 @@ fun astar(grid: Array<IntArray>, start: Node, goal: Node): List<Node>? {
 }
 
 fun main() {
-    val grid = arrayOf(
+    val maze = arrayOf(
         intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
         intArrayOf(0, 1, 0, 1, 0, 1, 1, 1),
         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
@@ -89,13 +103,11 @@ fun main() {
         intArrayOf(0, 0, 1, 0, 0, 1, 0, 0)
     )
 
-    val start = Node(2, 1)
-    val goal = Node(0, 7)
+    val start = Node(1, 2)
+    val goal = Node(7, 0)
 
-    val path = astar(grid, start, goal)
-    // Reformat for x and y
-    val newPath = path?.map {node -> "(x=${node.j + 1}, y=${node.i + 1})"}
-    println("Shortest path: $newPath")
+    val path = astar(maze, start, goal)
+    println("Shortest path: $path")
 }
 
 main();
