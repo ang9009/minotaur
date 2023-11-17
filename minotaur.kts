@@ -1,5 +1,4 @@
 import java.util.*
-// import khoury.*
 
 data class Position(val x: Int, val y: Int)
 data class State(val theseusPos: Position, val minotaurPos: Position)
@@ -91,7 +90,7 @@ fun aStar(maze: Array<IntArray>, start: State, goal: Position): List<State>? {
     
     // Main loop, runs until priority queue is empty (all nodes have been processed)
     while (openSet.isNotEmpty()) {
-        // Gets pair at front of queue, where current is the current Position
+        // Gets pair at front of queue, where current is the current State
         val (_, current) = openSet.poll()
 
         // If we find the goal, reconstruct the path and return
@@ -113,6 +112,8 @@ fun aStar(maze: Array<IntArray>, start: State, goal: Position): List<State>? {
         // of 1
             val tentativeG = gScore[current]!! + 1
 
+            // Use the current state as a key to allow for backtracking: if Theseus' position is
+            // the same, but the Minotaur's isn't, this should be considered as a different state
             if (!gScore.containsKey(state) || tentativeG < gScore[state]!!) {
                 gScore[state] = tentativeG
                 val fScore = tentativeG + heuristic(state.theseusPos, goal)
@@ -141,49 +142,7 @@ fun main() {
     val goal = Position(7, 0)
 
     val path = aStar(maze, start, goal)
-    val newPath = path?.map {state -> "${state.theseusPos}, ${state.minotaurPos}"}
-    println(newPath)
+    println(path)
 }
 
-// @EnabledTest
-// fun testGetNextMinotaurPosition() {
-//     val maze = arrayOf(
-//         intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
-//         intArrayOf(0, 1, 0, 1, 0, 1, 1, 1),
-//         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-//         intArrayOf(1, 1, 0, 1, 0, 1, 1, 0),
-//         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-//         intArrayOf(1, 0, 1, 1, 0, 1, 0, 1),
-//         intArrayOf(0, 0, 1, 0, 0, 1, 0, 0)
-//     )    
-
-//     testSame(getNextMinotaurPosition(Position(5, 2), Position(2, 2), maze), Position(4, 2), "First step")
-//     testSame(getNextMinotaurPosition(Position(4, 2), Position(2, 3), maze), Position(4, 3), "Second step")
-// }
-
-
-// @EnabledTest
-// fun testGetNextStates() {
-//     val maze = arrayOf(
-//         intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
-//         intArrayOf(0, 1, 0, 1, 0, 1, 1, 1),
-//         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-//         intArrayOf(1, 1, 0, 1, 0, 1, 1, 0),
-//         intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-//         intArrayOf(1, 0, 1, 1, 0, 1, 0, 1),
-//         intArrayOf(0, 0, 1, 0, 0, 1, 0, 0)
-//     ) 
-//     val state1 = State(Position(0, 2), Position(4, 2))
-//     val state2 = State(Position(2, 2), Position(4, 2))
-
-//     val state3 = State(Position(1, 2), Position(4, 2))
-//     val state4 = State(Position(2, 1), Position(4, 1))
-//     val state5 = State(Position(2, 3), Position(4, 3))
-
-//     testSame(getNextStates(State(Position(1, 2), Position(5, 2)), maze), listOf(state1, state2), "First step")
-//     testSame(getNextStates(State(Position(2, 2), Position(4, 2)), maze), listOf(state3, state4, state5), "Second step")
-// }
-
-
 main()
-// runEnabledTests(this)
