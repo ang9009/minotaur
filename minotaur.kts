@@ -1,6 +1,7 @@
 import java.util.*
 
 data class Node(val x: Int, val y: Int)
+data class State(val theseusPos: Node, val minotaurPos: Node)
 
 // Manhattan distance heuristic
 fun heuristic(point: Node, goal: Node): Int {
@@ -8,8 +9,8 @@ fun heuristic(point: Node, goal: Node): Int {
 }
 
 // Checks if a given position is valid: if it is within the maze, and it is an empty space
-fun isPositionValid(x: Int, y: Int, maze: Array<IntArray>): Boolean {
-    return y in 0 until maze.size && x in 0 until maze[0].size && maze[y][x] == 0;
+fun isPositionValid(pos: Node, maze: Array<IntArray>): Boolean {
+    return pos.y in 0 until maze.size && pos.x in 0 until maze[0].size && maze[pos.y][pos.x] == 0;
 }
 
 // Returns the next possible neighbors given the current node and a maze
@@ -22,7 +23,7 @@ fun getNextTheseusPositions(current: Node, maze: Array<IntArray>): List<Node> {
         val y = current.y + dy
         val neighbor = Node(x, y)
 
-        if (isPositionValid(x, y, maze)) { 
+        if (isPositionValid(neighbor, maze)) { 
             states.add(neighbor)
         }
     }
@@ -39,12 +40,45 @@ fun moveMinotaur(minotaurCoord: Int, theseusCoord: Int): Int {
     }
 }
 
-// fun getNextMinotaurPosition(minotaurPos: Node, theseusPos: Node) {
-//     repeat(2) {
-//         val dx = moveMinotaur(minotaurPos.j, theseusPos.j)
-//     }
-// }
+fun getNextMinotaurPosition(minotaurPos: Node, theseusPos: Node, maze: Array<IntArray>): Node {
+    var currMinotaurX = minotaurPos.x;
+    var currMinotaurY = minotaurPos.y;
 
+    for(i in 0 until 2) {
+        val dx = moveMinotaur(minotaurPos.x, theseusPos.x)
+        if(dx != 0 && isPositionValid(Node(minotaurPos.x + dx, minotaurPos.y), maze)) {
+            currMinotaurX = minotaurPos.x + dx
+            continue
+        }
+
+        val dy = moveMinotaur(minotaurPos.y, theseusPos.y)
+        if(dy != 0 && isPositionValid(Node(minotaurPos.x, minotaurPos.y + dy), maze)) {
+            currMinotaurY = minotaurPos.y + dy
+            continue
+        }
+    }
+
+    return Node(currMinotaurX, currMinotaurY)
+}
+
+fun getNextStates(state: State, maze: Array<IntArray>): List<State> {
+    val states = mutableListOf<State>();
+
+    // Looking at new theseus and minotaur positions
+    for(theseusPos in getNextTheseusPositions(state.theseusPos, maze)) {
+        val minotaurPos = getNextMinotaurPosition(theseusPos, state.minotaurPos, maze)
+
+        if(minotaurPos.x == theseusPos.x && minotaurPos.y == theseusPos.y) {
+            continue
+        }
+
+        states.add(State(theseusPos, minotaurPos))
+    }
+
+    return states
+}
+
+// !Modify to work with getNextStates instead of getNextTheseusPositions
 fun astar(maze: Array<IntArray>, start: Node, goal: Node): List<Node>? {
     // Stores nodes based on priority (cost), based on how close they are to the goal
     // and how many steps they are from the starting point
