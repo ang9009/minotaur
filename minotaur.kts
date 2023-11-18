@@ -2,6 +2,7 @@ import java.util.PriorityQueue
 
 // Classes representing the position of an agent and the state of the game
 data class Position(val x: Int, val y: Int)
+
 data class State(val theseusPos: Position, val minotaurPos: Position)
 
 // Calculates Manhattan distance heuristic given a position and the goal
@@ -15,15 +16,15 @@ fun heuristic(
 // Checks if a given position is valid: if it is within the maze, and if it is an empty space
 fun isPositionValid(
     pos: Position,
-    maze: Array<IntArray>,
+    maze: Array<CharArray>,
 ): Boolean {
-    return (pos.x in 0 until maze[0].size) && (pos.y in 0 until maze.size) && (maze[pos.y][pos.x] != 1)
+    return (pos.x in 0 until maze[0].size) && (pos.y in 0 until maze.size) && (maze[pos.y][pos.x] != '#')
 }
 
 // Returns the next possible neighbors given the current node and a maze
 fun getNextTheseusPositions(
     current: Position,
-    maze: Array<IntArray>,
+    maze: Array<CharArray>,
 ): List<Position> {
     val moves = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
     val states = mutableListOf<Position>()
@@ -57,7 +58,7 @@ fun moveMinotaur(
 fun getNextMinotaurPosition(
     minotaurPos: Position,
     theseusPos: Position,
-    maze: Array<IntArray>,
+    maze: Array<CharArray>,
 ): Position {
     var currMinotaurX = minotaurPos.x
     var currMinotaurY = minotaurPos.y
@@ -83,7 +84,7 @@ fun getNextMinotaurPosition(
 // Returns next possible states
 fun getNextStates(
     state: State,
-    maze: Array<IntArray>,
+    maze: Array<CharArray>,
 ): List<State> {
     val states = mutableListOf<State>()
 
@@ -101,21 +102,49 @@ fun getNextStates(
     return states
 }
 
-// The main A* algorithm. Takes in the maze, initial state, and the goal
-fun aStar(
-    maze: Array<IntArray>,
-    start: State,
-    goal: Position,
-) {
+// Returns a pair with the starting state representing the starting positions of Theseus and the Minotaur
+// , and then position of the goal, given a maze
+fun getStartStateAndGoal(maze: Array<CharArray>): Pair<State?, Position?> {
+    var theseusPos: Position? = null
+    var minotaurPos: Position? = null
+    var goalPos: Position? = null
+    var found = false
+
+    for (y in maze.indices) {
+        for (x in maze[0].indices) {
+            if (maze[y][x] == 'T') {
+                theseusPos = Position(x, y)
+            } else if (maze[y][x] == 'M') {
+                minotaurPos = Position(x, y)
+            } else if (maze[y][x] == 'G') {
+                goalPos = Position(x, y)
+            }
+
+            if (theseusPos != null && minotaurPos != null && goalPos != null) {
+                found = true
+                break
+            }
+        }
+
+        if (found == true) break
+    }
+
+    val start = State(theseusPos!!, minotaurPos!!)
+    return (start to goalPos)
+}
+
+// The main A* algorithm. Takes in the maze
+fun aStar(maze: Array<CharArray>) {
+    val (start, goal) = getStartStateAndGoal(maze)
     // Priority queue to order states based on cost (heuristic + distance from start). Elements are stored in Pair objects, where the first
     // item is the cost, and the second item is the state.
     val queue = PriorityQueue(compareBy<Pair<Int, State>> { it.first })
     // Initialize priority queue with starting state
-    queue.add(0 to start)
+    queue.add(0 to start!!)
     // Map that tracks previous state for each state so that the route can be reconstructed
     val cameFrom = mutableMapOf<State, State>()
     // gScore cost for each Theseus position
-    val gScore = mutableMapOf(start to 0)
+    val gScore = mutableMapOf(start!! to 0)
 
     // Main loop, runs until priority queue is empty (all nodes have been processed)
     while (queue.isNotEmpty()) {
@@ -123,7 +152,7 @@ fun aStar(
         val (_, current) = queue.poll()
 
         // If Theseus reaches the goal, reconstruct the path and terminate
-        if (current.theseusPos == goal) {
+        if (current.theseusPos == goal!!) {
             val path = mutableListOf<State>()
             var curr: State? = current
 
@@ -164,31 +193,28 @@ fun aStar(
 }
 
 fun main() {
-    // !Consider using different symbols for wall and not wall
     val maze1 =
         arrayOf(
-            intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
-            intArrayOf(0, 1, 0, 1, 0, 1, 1, 1),
-            intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-            intArrayOf(1, 1, 0, 1, 0, 1, 1, 0),
-            intArrayOf(0, 0, 0, 1, 0, 0, 0, 0),
-            intArrayOf(1, 0, 1, 1, 0, 1, 0, 1),
-            intArrayOf(0, 0, 1, 0, 0, 1, 0, 0),
+            charArrayOf(' ', ' ', 'T', ' ', ' ', '#'),
+            charArrayOf(' ', '#', '#', '#', ' ', '#'),
+            charArrayOf(' ', ' ', ' ', '#', ' ', 'G'),
+            charArrayOf(' ', '#', '#', '#', ' ', '#'),
+            charArrayOf(' ', ' ', 'M', ' ', ' ', '#'),
         )
 
     val maze2 =
         arrayOf(
-            intArrayOf(0, 0, 0, 0, 0, 1),
-            intArrayOf(0, 1, 1, 1, 0, 1),
-            intArrayOf(0, 0, 0, 1, 0, 0),
-            intArrayOf(0, 1, 1, 1, 0, 1),
-            intArrayOf(0, 0, 0, 0, 0, 1),
+            charArrayOf(' ', '#', ' ', ' ', ' ', ' ', ' ', 'G'),
+            charArrayOf(' ', '#', ' ', '#', ' ', '#', '#', '#'),
+            charArrayOf(' ', 'T', ' ', '#', ' ', 'M', ' ', ' '),
+            charArrayOf('#', '#', ' ', '#', ' ', '#', '#', ' '),
+            charArrayOf(' ', ' ', ' ', '#', ' ', ' ', ' ', ' '),
+            charArrayOf('#', ' ', '#', '#', ' ', '#', ' ', '#'),
+            charArrayOf(' ', ' ', '#', ' ', ' ', '#', ' ', ' '),
         )
 
-    // Maze 1
-    val start = State(Position(1, 2), Position(5, 2))
-    val goal = Position(7, 0)
-    aStar(maze1, start, goal)
+    aStar(maze1)
+    aStar(maze2)
 }
 
 main()
