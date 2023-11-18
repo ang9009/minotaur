@@ -6,7 +6,7 @@ data class Position(val x: Int, val y: Int)
 data class State(val theseusPos: Position, val minotaurPos: Position)
 
 // Calculates Manhattan distance heuristic given a position and the goal
-fun heuristic(
+fun getHeuristic(
     point: Position,
     goal: Position,
 ): Int {
@@ -26,7 +26,8 @@ fun getNextTheseusPositions(
     current: Position,
     maze: Array<CharArray>,
 ): List<Position> {
-    val moves = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
+    // Theseus can move left, up, right, down, or stay in place
+    val moves = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1, 0 to 0)
     val states = mutableListOf<Position>()
 
     for ((dx, dy) in moves) {
@@ -142,7 +143,7 @@ fun aStar(maze: Array<CharArray>) {
     // Initialize priority queue with starting state
     queue.add(0 to start!!)
     // Map that tracks previous state for each state so that the route can be reconstructed
-    val cameFrom = mutableMapOf<State, State>()
+    val previousStates = mutableMapOf<State, State>()
     // gScore cost for each Theseus position
     val gScore = mutableMapOf(start!! to 0)
 
@@ -151,18 +152,18 @@ fun aStar(maze: Array<CharArray>) {
         // Gets current state from front of priority queue
         val (_, current) = queue.poll()
 
-        // If Theseus reaches the goal, reconstruct the path and terminate
+        // If Theseus reaches the goal, reconstruct the path and return
         if (current.theseusPos == goal!!) {
             val path = mutableListOf<State>()
             var curr: State? = current
 
             while (curr != null) {
                 path.add(curr)
-                curr = cameFrom[curr]
+                curr = previousStates[curr]
             }
 
             // Reverse the list to get the correct order, then print the positions
-            println("Goal reached!")
+            println("Theseus escaped!")
             path.reversed().forEach {
                 println("${it.theseusPos}, ${it.minotaurPos}")
             }
@@ -174,22 +175,22 @@ fun aStar(maze: Array<CharArray>) {
             // The gScore of moving from the current node to its neighbour is just the score
             // of the current node + 1, since moving from one tile to another has a uniform cost
             // of 1
-            val tentativeG = gScore[current]!! + 1
+            val currGScore = gScore[current]!! + 1
 
             // If Theseus' position is the same, but the Minotaur's isn't, this should be considered as a
             // different state. Thus, we must use the current state as a key in the gScore function.
             // This allows for backtracking, which is often needed
-            if (!gScore.containsKey(state) || tentativeG < gScore[state]!!) {
-                gScore[state] = tentativeG
-                val fScore = tentativeG + heuristic(state.theseusPos, goal)
+            if (!gScore.containsKey(state) || currGScore < gScore[state]!!) {
+                gScore[state] = currGScore
+                val fScore = currGScore + getHeuristic(state.theseusPos, goal)
                 queue.add(fScore to state)
-                cameFrom[state] = current
+                previousStates[state] = current
             }
         }
     }
 
     // If all nodes have been explored (priority queue is emptied), no solution was found
-    println("No solution found")
+    println("Theseus could not escape...")
 }
 
 fun main() {
@@ -204,7 +205,18 @@ fun main() {
 
     val maze2 =
         arrayOf(
-            charArrayOf(' ', '#', ' ', ' ', ' ', ' ', ' ', 'G'),
+            charArrayOf(' ', ' ', 'M', ' ', '#'),
+            charArrayOf(' ', '#', '#', ' ', '#'),
+            charArrayOf(' ', ' ', 'T', ' ', 'G'),
+            charArrayOf(' ', '#', ' ', ' ', '#'),
+            charArrayOf(' ', '#', ' ', ' ', '#'),
+            charArrayOf('#', '#', ' ', ' ', '#'),
+            charArrayOf(' ', ' ', ' ', ' ', '#'),
+        )
+
+    val maze3 =
+        arrayOf(
+            charArrayOf(' ', ' ', ' ', ' ', ' ', ' ', ' ', 'G'),
             charArrayOf(' ', '#', ' ', '#', ' ', '#', '#', '#'),
             charArrayOf(' ', 'T', ' ', '#', ' ', 'M', ' ', ' '),
             charArrayOf('#', '#', ' ', '#', ' ', '#', '#', ' '),
@@ -215,6 +227,7 @@ fun main() {
 
     aStar(maze1)
     aStar(maze2)
+    aStar(maze3)
 }
 
 main()
