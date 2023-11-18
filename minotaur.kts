@@ -1,7 +1,7 @@
 import java.util.PriorityQueue
 
+// Classes representing the position of an agent and the state of the game
 data class Position(val x: Int, val y: Int)
-
 data class State(val theseusPos: Position, val minotaurPos: Position)
 
 // Calculates Manhattan distance heuristic given a position and the goal
@@ -12,7 +12,7 @@ fun heuristic(
     return Math.abs(point.x - goal.x) + Math.abs(point.y - goal.y)
 }
 
-// Checks if a given position is valid: if it is within the maze, and it is an empty space
+// Checks if a given position is valid: if it is within the maze, and if it is an empty space
 fun isPositionValid(
     pos: Position,
     maze: Array<IntArray>,
@@ -87,8 +87,7 @@ fun getNextStates(
 ): List<State> {
     val states = mutableListOf<State>()
 
-    // If the Minotaur catches Theseus in any of the possible positions Theseus can occupy,
-    // it should not be a possible state
+    // Only add the states where the Minotaur does not catch Theseus
     for (theseusPos in getNextTheseusPositions(state.theseusPos, maze)) {
         val minotaurPos = getNextMinotaurPosition(state.minotaurPos, theseusPos, maze)
 
@@ -165,6 +164,7 @@ fun aStar(
 }
 
 fun main() {
+    // !Consider using different symbols for wall and not wall
     val maze1 =
         arrayOf(
             intArrayOf(0, 1, 0, 0, 0, 0, 0, 0),
