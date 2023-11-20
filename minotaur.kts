@@ -1,19 +1,18 @@
 import java.util.PriorityQueue
 
-// Classes representing the position of an agent and the state of the game
+// Classes representing a position and the state of the game
 data class Position(val x: Int, val y: Int)
-
 data class State(val theseusPos: Position, val minotaurPos: Position)
 
-// Calculates Manhattan distance heuristic given a position and the goal
-fun getHeuristic(
-    point: Position,
-    goal: Position,
+// Calculates Manhattan distance heuristic given a position and the exit
+fun getHScore(
+    pos: Position,
+    exit: Position,
 ): Int {
-    return Math.abs(point.x - goal.x) + Math.abs(point.y - goal.y)
+    return Math.abs(pos.x - exit.x) + Math.abs(pos.y - exit.y)
 }
 
-// Checks if a given position is valid: if it is within the maze, and if it is an empty space
+// Checks if a given position is valid: if it is within the maze, and if it is a non-wall
 fun isPositionValid(
     pos: Position,
     maze: Array<CharArray>,
@@ -21,7 +20,7 @@ fun isPositionValid(
     return (pos.x in 0 until maze[0].size) && (pos.y in 0 until maze.size) && (maze[pos.y][pos.x] != '#')
 }
 
-// Returns the next possible neighbors given the current node and a maze
+// Returns the next possible Theseus positions given his current position and a maze
 fun getNextTheseusPositions(
     current: Position,
     maze: Array<CharArray>,
@@ -43,7 +42,7 @@ fun getNextTheseusPositions(
     return states
 }
 
-// Return change in x or y based on given horizontal/vertical coordinates
+// Return change in x or y based on the Minotaur's and Theseus' horizontal/vertical coordinates
 fun moveMinotaur(
     minotaurCoord: Int,
     theseusCoord: Int,
@@ -103,12 +102,12 @@ fun getNextStates(
     return states
 }
 
-// Returns a pair with the starting state representing the starting positions of Theseus and the Minotaur
-// , and then position of the goal, given a maze
+// Returns a pair with the starting state representing the starting positions of Theseus and the Minotaur,
+// and theposition of the exit, given a maze
 fun getStartStateAndGoal(maze: Array<CharArray>): Pair<State?, Position?> {
     var theseusPos: Position? = null
     var minotaurPos: Position? = null
-    var goalPos: Position? = null
+    var exitPos: Position? = null
     var found = false
 
     for (y in maze.indices) {
@@ -117,11 +116,11 @@ fun getStartStateAndGoal(maze: Array<CharArray>): Pair<State?, Position?> {
                 theseusPos = Position(x, y)
             } else if (maze[y][x] == 'M') {
                 minotaurPos = Position(x, y)
-            } else if (maze[y][x] == 'G') {
-                goalPos = Position(x, y)
+            } else if (maze[y][x] == 'E') {
+                exitPos = Position(x, y)
             }
 
-            if (theseusPos != null && minotaurPos != null && goalPos != null) {
+            if (theseusPos != null && minotaurPos != null && exitPos != null) {
                 found = true
                 break
             }
@@ -131,29 +130,31 @@ fun getStartStateAndGoal(maze: Array<CharArray>): Pair<State?, Position?> {
     }
 
     val start = State(theseusPos!!, minotaurPos!!)
-    return (start to goalPos)
+    return (start to exitPos)
 }
 
 // The main A* algorithm. Takes in the maze
-fun aStar(maze: Array<CharArray>) {
-    val (start, goal) = getStartStateAndGoal(maze)
-    // Priority queue to order states based on cost (heuristic + distance from start). Elements are stored in Pair objects, where the first
-    // item is the cost, and the second item is the state.
+fun solver(maze: Array<CharArray>) {
+    val (start, exit) = getStartStateAndGoal(maze)
+    // Priority queue to order states based on cost (heuristic + distance from start). Elements are stored in Pairs (tuples)
+    // where the first item is the cost, and the second item is the state.
     val queue = PriorityQueue(compareBy<Pair<Int, State>> { it.first })
     // Initialize priority queue with starting state
     queue.add(0 to start!!)
     // Map that tracks previous state for each state so that the route can be reconstructed
     val previousStates = mutableMapOf<State, State>()
-    // gScore cost for each Theseus position
-    val gScore = mutableMapOf(start!! to 0)
+    // Stores gScore cost for each State, where States are used as keys to access the corresponding gScore. This allows for
+    // backtracking, as a State where Theseus is in the same position but the Minotaur is not is considered distinct.
+    // Backtracking also results in a higher gScore, so this should be stored as well.
+    val gScore = mutableMapOf<State, Int>(start!! to 0)
 
     // Main loop, runs until priority queue is empty (all nodes have been processed)
     while (queue.isNotEmpty()) {
         // Gets current state from front of priority queue
         val (_, current) = queue.poll()
 
-        // If Theseus reaches the goal, reconstruct the path and return
-        if (current.theseusPos == goal!!) {
+        // If Theseus reaches the exit, reconstruct the path and return
+        if (current.theseusPos == exit!!) {
             val path = mutableListOf<State>()
             var curr: State? = current
 
@@ -176,13 +177,9 @@ fun aStar(maze: Array<CharArray>) {
             // of the current node + 1, since moving from one tile to another has a uniform cost
             // of 1
             val currGScore = gScore[current]!! + 1
-
-            // If Theseus' position is the same, but the Minotaur's isn't, this should be considered as a
-            // different state. Thus, we must use the current state as a key in the gScore function.
-            // This allows for backtracking, which is often needed
             if (!gScore.containsKey(state) || currGScore < gScore[state]!!) {
                 gScore[state] = currGScore
-                val fScore = currGScore + getHeuristic(state.theseusPos, goal)
+                val fScore = currGScore + getHScore(state.theseusPos, exit)
                 queue.add(fScore to state)
                 previousStates[state] = current
             }
@@ -194,40 +191,76 @@ fun aStar(maze: Array<CharArray>) {
 }
 
 fun main() {
+    // Based on level 1
     val maze1 =
         arrayOf(
-            charArrayOf(' ', ' ', 'T', ' ', ' ', '#'),
-            charArrayOf(' ', '#', '#', '#', ' ', '#'),
-            charArrayOf(' ', ' ', ' ', '#', ' ', 'G'),
-            charArrayOf(' ', '#', '#', '#', ' ', '#'),
-            charArrayOf(' ', ' ', 'M', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#', '#'),
+            charArrayOf('#', ' ', ' ', 'T', ' ', ' ', '#'),
+            charArrayOf('#', ' ', '#', '#', '#', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', '#', ' ', 'E'),
+            charArrayOf('#', ' ', '#', '#', '#', ' ', '#'),
+            charArrayOf('#', ' ', ' ', 'M', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#', '#'),
         )
 
+    // Based on level 2
     val maze2 =
         arrayOf(
-            charArrayOf(' ', ' ', 'M', ' ', '#'),
-            charArrayOf(' ', '#', '#', ' ', '#'),
-            charArrayOf(' ', ' ', 'T', ' ', 'G'),
-            charArrayOf(' ', '#', ' ', ' ', '#'),
-            charArrayOf(' ', '#', ' ', ' ', '#'),
-            charArrayOf('#', '#', ' ', ' ', '#'),
-            charArrayOf(' ', ' ', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#'),
+            charArrayOf('#', ' ', ' ', 'M', ' ', '#'),
+            charArrayOf('#', ' ', '#', '#', ' ', '#'),
+            charArrayOf('#', ' ', ' ', 'T', ' ', 'E'),
+            charArrayOf('#', ' ', '#', ' ', ' ', '#'),
+            charArrayOf('#', ' ', '#', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', ' ', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#'),
         )
 
+    // Based on level 6
     val maze3 =
         arrayOf(
-            charArrayOf(' ', ' ', ' ', ' ', ' ', ' ', ' ', 'G'),
-            charArrayOf(' ', '#', ' ', '#', ' ', '#', '#', '#'),
-            charArrayOf(' ', 'T', ' ', '#', ' ', 'M', ' ', ' '),
-            charArrayOf('#', '#', ' ', '#', ' ', '#', '#', ' '),
-            charArrayOf(' ', ' ', ' ', '#', ' ', ' ', ' ', ' '),
-            charArrayOf('#', ' ', '#', '#', ' ', '#', ' ', '#'),
-            charArrayOf(' ', ' ', '#', ' ', ' ', '#', ' ', ' '),
+            charArrayOf('#', '#', '#', '#', '#', '#', '#', '#'),
+            charArrayOf('#', ' ', ' ', ' ', 'T', ' ', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', '#', '#', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', ' ', '#', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', '#', '#', ' ', '#'),
+            charArrayOf('#', ' ', '#', ' ', ' ', '#', ' ', '#'),
+            charArrayOf('#', ' ', '#', '#', ' ', ' ', ' ', '#'),
+            charArrayOf('#', ' ', '#', 'E', 'M', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#', '#', '#'),
         )
 
-    aStar(maze1)
-    aStar(maze2)
-    aStar(maze3)
+    // An unsolvable maze where the exit is blocked
+        val exitBlocked =
+            arrayOf(
+                charArrayOf('#', '#', '#', '#', '#', '#'),
+                charArrayOf('#', ' ', 'T', ' ', ' ', '#'),
+                charArrayOf('#', ' ', ' ', ' ', '#', '#'),
+                charArrayOf('#', ' ', ' ', ' ', '#', 'E'),
+                charArrayOf('#', ' ', ' ', ' ', '#', '#'),
+                charArrayOf('#', ' ', 'M', ' ', ' ', '#'),
+                charArrayOf('#', '#', '#', '#', '#', '#'),
+            )
+
+    // An unsolvable maze where the Minotaur is too close to be avoided
+        val minotaurTooClose =
+            arrayOf(
+                charArrayOf('#', '#', '#', '#', '#', '#'),
+                charArrayOf('#', 'T', ' ', ' ', ' ', '#'),
+                charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
+                charArrayOf('#', ' ', ' ', ' ', ' ', 'E'),
+                charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
+                charArrayOf('#', 'M', ' ', ' ', ' ', '#'),
+                charArrayOf('#', '#', '#', '#', '#', '#'),
+            )
+
+
+    solver(maze1)
+    solver(maze2)
+    solver(maze3)
+    solver(exitBlocked)
+    solver(minotaurTooClose)
 }
 
 main()
