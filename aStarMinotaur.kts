@@ -8,7 +8,7 @@ data class State(val theseusPos: Position, val minotaurPos: Position)
 fun getHScore(
     pos: Position,
     exit: Position,
-): Int {
+): Int 
     return Math.abs(pos.x - exit.x) + Math.abs(pos.y - exit.y)
 }
 
@@ -103,7 +103,7 @@ fun getNextStates(
 }
 
 // Returns a pair with the starting state representing the starting positions of Theseus and the Minotaur,
-// and theposition of the exit, given a maze
+// and the position of the exit, given a maze
 fun getStartStateAndGoal(maze: Array<CharArray>): Pair<State?, Position?> {
     var theseusPos: Position? = null
     var minotaurPos: Position? = null
@@ -163,10 +163,12 @@ fun solver(maze: Array<CharArray>) {
                 curr = previousStates[curr]
             }
 
-            // Reverse the list to get the correct order, then print the positions
+            // Reverse the list to get the correct order, then print the positions in x, y coordinates
             println("Theseus escaped!")
             path.reversed().forEach {
-                println("${it.theseusPos}, ${it.minotaurPos}")
+                val theseusDisplayPos = Position(it.theseusPos.x + 1, it.theseusPos.y + 1)
+                val minotaurDisplayPos = Position(it.minotaurPos.x + 1, it.minotaurPos.y + 1)
+                println("$theseusDisplayPos, $minotaurDisplayPos")
             }
 
             return
@@ -191,6 +193,10 @@ fun solver(maze: Array<CharArray>) {
 }
 
 fun main() {
+    // -----------------------------------------------------------------
+    // Examples of mazes
+    // -----------------------------------------------------------------
+    
     // Based on level 1
     val maze1 =
         arrayOf(
@@ -203,22 +209,8 @@ fun main() {
             charArrayOf('#', '#', '#', '#', '#', '#', '#'),
         )
 
-    // Based on level 2
-    val maze2 =
-        arrayOf(
-            charArrayOf('#', '#', '#', '#', '#', '#'),
-            charArrayOf('#', ' ', ' ', 'M', ' ', '#'),
-            charArrayOf('#', ' ', '#', '#', ' ', '#'),
-            charArrayOf('#', ' ', ' ', 'T', ' ', 'E'),
-            charArrayOf('#', ' ', '#', ' ', ' ', '#'),
-            charArrayOf('#', ' ', '#', ' ', ' ', '#'),
-            charArrayOf('#', '#', '#', ' ', ' ', '#'),
-            charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
-            charArrayOf('#', '#', '#', '#', '#', '#'),
-        )
-
     // Based on level 6
-    val maze3 =
+    val maze2 =
         arrayOf(
             charArrayOf('#', '#', '#', '#', '#', '#', '#', '#'),
             charArrayOf('#', ' ', ' ', ' ', 'T', ' ', ' ', '#'),
@@ -232,35 +224,36 @@ fun main() {
         )
 
     // An unsolvable maze where the exit is blocked
-        val exitBlocked =
-            arrayOf(
-                charArrayOf('#', '#', '#', '#', '#', '#'),
-                charArrayOf('#', ' ', 'T', ' ', ' ', '#'),
-                charArrayOf('#', ' ', ' ', ' ', '#', '#'),
-                charArrayOf('#', ' ', ' ', ' ', '#', 'E'),
-                charArrayOf('#', ' ', ' ', ' ', '#', '#'),
-                charArrayOf('#', ' ', 'M', ' ', ' ', '#'),
-                charArrayOf('#', '#', '#', '#', '#', '#'),
-            )
+    val exitBlocked =
+        arrayOf(
+            charArrayOf('#', '#', '#', '#', '#', '#'),
+            charArrayOf('#', ' ', 'T', ' ', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', '#', '#'),
+            charArrayOf('#', ' ', ' ', ' ', '#', 'E'),
+            charArrayOf('#', ' ', ' ', ' ', '#', '#'),
+            charArrayOf('#', ' ', 'M', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#'),
+        )
 
-    // An unsolvable maze where the Minotaur is too close to be avoided
-        val minotaurTooClose =
-            arrayOf(
-                charArrayOf('#', '#', '#', '#', '#', '#'),
-                charArrayOf('#', 'T', ' ', ' ', ' ', '#'),
-                charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
-                charArrayOf('#', ' ', ' ', ' ', ' ', 'E'),
-                charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
-                charArrayOf('#', 'M', ' ', ' ', ' ', '#'),
-                charArrayOf('#', '#', '#', '#', '#', '#'),
-            )
+    // An unsolvable maze where there are no obstacles, and the Minotaur cannot be avoided
+    val minotaurTooClose =
+        arrayOf(
+            charArrayOf('#', '#', '#', '#', '#', '#'),
+            charArrayOf('#', 'T', ' ', ' ', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
+            charArrayOf('#', ' ', ' ', ' ', ' ', 'E'),
+            charArrayOf('#', ' ', ' ', ' ', ' ', '#'),
+            charArrayOf('#', 'M', ' ', ' ', ' ', '#'),
+            charArrayOf('#', '#', '#', '#', '#', '#'),
+        )
 
-
+    // In the output, the first position is Theseus' positions, and the second position is the Minotaur's
     solver(maze1)
     solver(maze2)
-    solver(maze3)
     solver(exitBlocked)
     solver(minotaurTooClose)
+
+    // Mazes can be designed and passed into the function here
 }
 
 main()
