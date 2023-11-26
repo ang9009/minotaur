@@ -8,7 +8,7 @@ data class State(val theseusPos: Position, val minotaurPos: Position)
 fun getHScore(
     pos: Position,
     exit: Position,
-): Int 
+): Int {
     return Math.abs(pos.x - exit.x) + Math.abs(pos.y - exit.y)
 }
 
